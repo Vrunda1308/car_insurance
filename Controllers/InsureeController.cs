@@ -12,24 +12,15 @@ namespace Car_Insurance.Controllers
     {
         private ApplicationDbContext db = new ApplicationDbContext();
 
-        // GET: Insuree
-        public System.Web.Mvc.ActionResult Index() => View(db.Insurees.ToList());
 
-        private ActionResult View(object p)
-        {
-            throw new NotImplementedException();
-        }
-
-        // GET: Insuree/Create
         public ActionResult Create()
         {
             return View();
         }
 
-        // POST: Insuree/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create([Bind(Include = "Id,FirstName,LastName,EmailAddress,DateOfBirth,CarYear,CarMake,CarModel,DUI,SpeedingTickets,CoverageType,Quote")] Models.Insuree insuree)
+        public ActionResult Create([Bind(Include = "Id,FirstName,LastName,EmailAddress,DateOfBirth,CarYear,CarMake,CarModel,SpeedingTickets,HasDUI,IsFullCoverage")] Insuree insuree)
         {
             if (ModelState.IsValid)
             {
@@ -42,43 +33,64 @@ namespace Car_Insurance.Controllers
             return View(insuree);
         }
 
-        // Additional methods for Edit, Details, Delete would go here
-
         private decimal CalculateQuote(Insuree insuree)
         {
-            decimal baseQuote = 50;
+            decimal quote = 50; // Base price
 
             int age = DateTime.Now.Year - insuree.DateOfBirth.Year;
-            if (DateTime.Now.DayOfYear < insuree.DateOfBirth.DayOfYear)
-                age--;
+            if (insuree.DateOfBirth > DateTime.Now.AddYears(-age)) age--;
 
             if (age <= 18)
-                baseQuote += 100;
-            else if (age <= 25)
-                baseQuote += 50;
-            else
-                baseQuote += 25;
+            {
+                quote += 100;
+            }
+            else if (age >= 19 && age <= 25)
+            {
+                quote += 50;
+            }
+            else if (age >= 26)
+            {
+                quote += 25;
+            }
 
             if (insuree.CarYear < 2000)
-                baseQuote += 25;
-            else if (insuree.CarYear > 2015)
-                baseQuote += 25;
+            {
+                quote += 25;
+            }
+            if (insuree.CarYear > 2015)
+            {
+                quote += 25;
+            }
 
             if (insuree.CarMake.ToLower() == "porsche")
-                baseQuote += 25;
+            {
+                quote += 25;
+                if (insuree.CarModel.ToLower() == "911 carrera")
+                {
+                    quote += 25;
+                }
+            }
 
-            if (insuree.CarModel.ToLower() == "911 carrera")
-                baseQuote += 25;
+            quote += insuree.SpeedingTickets * 10;
 
-            baseQuote += insuree.SpeedingTickets * 10;
+            if (insuree.HasDUI)
+            {
+                quote *= 1.25m; // Add 25%
+            }
 
-            if (insuree.DUI)
-                baseQuote += baseQuote * 0.25m;
+            if (insuree.IsFullCoverage)
+            {
+                quote *= 1.50m; // Add 50%
+            }
 
-            if (insuree.CoverageType)
-                baseQuote += baseQuote * 0.50m;
+            return quote;
+        }
 
-            return baseQuote;
+        // Admin View
+        public ActionResult Admin()
+        {
+            var insurees = db.Insurees.ToList();
+            return View(insurees);
         }
     }
 }

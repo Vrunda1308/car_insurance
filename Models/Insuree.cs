@@ -50,5 +50,7 @@ namespace Car_Insurance.Models
         [Required]
         [DataType(DataType.Currency)]
         public decimal Quote { get; set; }
+        public bool HasDUI { get; internal set; }
+        public bool IsFullCoverage { get; internal set; }
     }
 }
